@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INFOR FIGHTING 3D - POLISHED</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#06060a;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden}
+#wrap{width:1120px;height:640px;position:relative;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px #000,0 0 0 2px #fff2 inset;border:2px solid #222}
+#hud{position:absolute;top:0;left:0;right:0;height:78px;z-index:10;display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent)}
+.barWrap{flex:1;position:relative}
+.name{font-family:'Inter';font-size:11px;letter-spacing:1px;color:#fff;margin-bottom:4px;font-weight:900;display:flex;justify-content:space-between}
+.bar{height:18px;background:#000;border-radius:10px;overflow:hidden;border:1.5px solid #fff2;transform:skew(-8deg)}
+.fill{height:100%;border-radius:10px;transition:width .12s ease-out}
+#hp1{background:linear-gradient(90deg,#00ff88,#00cc6a);box-shadow:0 0 12px #00ff8866}
+#hp2{background:linear-gradient(90deg,#ff2a6d,#ff084a);box-shadow:0 0 12px #ff2a6d66}
+.subBar{height:5px;background:#111;border-radius:10px;margin-top:4px;overflow:hidden;border:1px solid #ffffff11}
+.subFill{height:100%;transition:width .15s}
+#g1,#g2{background:#00d9ff} #s1,#s2{background:#ffea00}
+#timer{width:68px;height:68px;background:#000;border:2px solid #fff;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;box-shadow:0 0 20px #000}
+#sel{position:absolute;inset:0;background:radial-gradient(1200px at 20% 10%,#1a2744 0%,#0a0a12 60%);z-index:30;display:flex;flex-direction:column;align-items:center;padding:20px}
+#sel h1{font-size:64px;letter-spacing:10px;color:#fff;line-height:.9} #sel h1 b{color:#00ff88;text-shadow:0 0 30px #00ff88}
+#sel p{font-family:'Inter';font-size:11px;letter-spacing:4px;color:#666;margin-top:6px}
+.grid{display:grid;grid-template-columns:repeat(4,176px);gap:12px;margin-top:20px}
+.card{height:112px;background:linear-gradient(180deg,#1b1b2a,#12121b);border:2px solid #252540;border-radius:14px;padding:10px;cursor:pointer;position:relative;overflow:hidden;transition:.15s}
+.card:hover{transform:translateY(-3px) scale(1.02);border-color:#555}
+.card.on{border-color:#00ff88;box-shadow:0 0 0 3px #00ff8833,0 10px 20px #00ff8822}
+.card.both{border-color:#ffea00;box-shadow:0 0 0 3px #ffea0033}
+.badge{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#000;border:1.5px solid #fff3;display:flex;align-items:center;justify-content:center;font-size:11px}
+.icon{width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;border:2px solid #000;box-shadow:inset 0 2px 0 #fff3}
+.cname{font-size:14px;color:#fff;margin-top:6px;letter-spacing:.5px} .cstyle{font-family:'Inter';font-size:8px;color:#999;font-weight:700;margin-top:2px}
+#go{margin-top:18px;padding:14px 52px;background:#00ff88;color:#000;border:0;border-radius:12px;font-size:20px;letter-spacing:5px;font-family:'Bebas Neue';cursor:pointer;box-shadow:0 0 30px #00ff8866;display:none}
+#go.show{display:block}
+#fx{position:absolute;inset:0;pointer-events:none;z-index:12}
+.hitText{position:absolute;font-family:'Inter';font-weight:900;font-size:24px;color:#fff;text-shadow:0 2px 0 #000,0 0 14px currentColor;animation:pop .6s ease-out forwards}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(.2);opacity:0}25%{transform:translate(-50%,-50%) scale(1.35);opacity:1}100%{transform:translate(-50%,-120px) scale(1);opacity:0}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+</head>
+<body>
+<div id="wrap">
+<div id="hud">
+<div class="barWrap"><div class="name"><span id="n1">P1</span><span id="d1">- 200</span></div><div class="bar"><div id="hp1" class="fill" style="width:100%"></div></div><div class="subBar"><div id="g1" class="subFill" style="width:100%"></div></div><div class="subBar"><div id="s1" class="subFill" style="width:0%"></div></div></div>
+<div id="timer">60</div>
+<div class="barWrap"><div class="name"><span id="d2">200 -</span><span id="n2">P2</span></div><div class="bar"><div id="hp2" class="fill" style="width:100%"></div></div><div class="subBar"><div id="g2" class="subFill" style="width:100%"></div></div><div class="subBar"><div id="s2" class="subFill" style="width:0%"></div></div></div>
+</div>
+<div id="fx"></div>
+<div id="sel"><h1>INFOR-<b>FIGHTING</b> 3D</h1><p>POLISHED EDITION • BIG FIGHTERS • 60FPS</p><div class="grid" id="grid"></div><button id="go" onclick="start()">LUTAR — ENTER</button></div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+
+const CHARS=[
+{id:'gustavo',name:'GUSTAVO',full:'Gustavo Oliveira',style:'MUAY THAI',emoji:'🥊',col:0x00ff88,skin:0xffdbac,dmg:28,range:2.3},
+{id:'murilo',name:'MURILO',full:'Murilo Santos',style:'CAPOEIRA',emoji:'🌀',col:0x2a2a2a,skin:0x3a3a3a,dmg:30,range:2.9},
+{id:'jonh',name:'JONH',full:'Jonh Pereira',style:'JIU JITSU',emoji:'🥋',col:0x2a4bff,skin:0xffdbac,dmg:32,range:1.9},
+{id:'guilherme',name:'GUILHERME',full:'Guilherme Costa',style:'RUAS',emoji:'💥',col:0xff2a2a,skin:0xffdbac,dmg:27,range:2.3},
+{id:'abner',name:'ABNER',full:'Abner Silva',style:'JUDÔ',emoji:'🥋',col:0xf5f5f5,skin:0xe8c4a8,dmg:29,range:1.9},
+{id:'ferreira',name:'FERREIRA',full:'Ferreira Andrade',style:'BOXE',emoji:'🥊',col:0xffd700,skin:0xd9a066,dmg:26,range:2.1},
+{id:'bunitin',name:'BUNITIN KIM',full:'Bunitin Kim',style:'TAEKWONDO',emoji:'🇰🇷',col:0xffffff,skin:0xffdbac,dmg:31,range:2.7},
+{id:'aquiles',name:'AQUILES',full:'Aquiles Madeira',style:'PAU NA MÃO',emoji:'🪵',col:0x8b4513,skin:0xffdbac,dmg:35,range:3.3},
+{id:'miguel',name:'MIGUEL',full:'Miguel Torres',style:'KRAV MAGA',emoji:'⚔️',col:0x444444,skin:0xe8c4a8,dmg:36,range:2.2},
+{id:'vitoria',name:'VITÓRIA',full:'Vitória Lima',style:'JUDÔ FEM',emoji:'🥋',col:0xff69b4,skin:0xffdbac,dmg:28,range:1.9},
+{id:'evellyn',name:'EVELLYN',full:'Evellyn Rocha',style:'KARATÊ',emoji:'🥋',col:0xffffff,skin:0xffdbac,dmg:30,range:2.3},
+{id:'bosco',name:'BOSCO',full:'Bosco Andrade',style:'KARATÊ',emoji:'❤️‍🔥',col:0x111111,skin:0xd9a066,dmg:30,range:2.3},
+];
+
+let s1=6,s2=11;
+const grid=document.getElementById('grid');
+function drawGrid(){
+ grid.innerHTML='';
+ CHARS.forEach((c,i)=>{
+  const on = i===s1 || i===s2;
+  const both = i===s1 && i===s2;
+  const el=document.createElement('div');
+  el.className='card'+(on?' on':'')+(both?' both':'');
+  el.innerHTML=`<div class="badge">${c.emoji}</div><div class="icon" style="background:#${c.col.toString(16).padStart(6,'0')};color:${c.col===0xffffff||c.col===0xf5f5f5?'#000':'#fff'}">${c.emoji}</div><div class="cname">${c.name}</div><div class="cstyle">${c.style} • ${c.dmg} DMG</div>`;
+  el.onclick=()=>{if(document.getElementById('go').classList.contains('show')) s2=i; else s1=i; drawGrid(); checkGo();};
+  grid.appendChild(el);
+ });
+}
+function checkGo(){ if(s1!==s2 || true){ document.getElementById('go').classList.add('show'); }}
+drawGrid(); checkGo();
+
+let scene,camera,renderer, p1,p2, keys={}, run=false, time=60, raf;
+let clock=new THREE.Clock();
+
+function createFighter(char, x){
+ const group=new THREE.Group();
+ group.char=char; group.hp=200; group.guard=100; group.sp=0; group.cd=0; group.state='idle'; group.canHit=false; group.dmgNow=0; group.face=x<0?1:-1; group.animTime=0; group.took=false;
+
+ const matSkin=new THREE.MeshStandardMaterial({color:char.skin, roughness:0.6, metalness:0.05});
+ const matCloth=new THREE.MeshStandardMaterial({color:char.col, roughness:0.5, metalness:0.1});
+ const matGlove=new THREE.MeshStandardMaterial({color:0xb81d1d, roughness:0.4});
+
+ // sombra no chão
+ const shadow=new THREE.Mesh(new THREE.CircleGeometry(0.7,20), new THREE.MeshBasicMaterial({color:0x000000, transparent:true, opacity:0.35}));
+ shadow.rotation.x=-Math.PI/2; shadow.position.y=0.02; group.add(shadow); shadow.name='shadow';
+
+ // torso grande
+ const torso=new THREE.Mesh(new THREE.CapsuleGeometry(0.45,0.7,4,12), matCloth);
+ torso.position.y=1.35; torso.name='torso'; group.add(torso);
+ // cinto
+ const belt=new THREE.Mesh(new THREE.TorusGeometry(0.46,0.08,8,20), new THREE.MeshStandardMaterial({color:0x111111}));
+ belt.position.y=0.95; belt.rotation.x=Math.PI/2; group.add(belt);
+ // shorts grande
+ const shorts=new THREE.Mesh(new THREE.BoxGeometry(0.95,0.55,0.55), matCloth);
+ shorts.position.y=0.65; shorts.name='shorts'; group.add(shorts);
+ // cabeça 2x maior
+ const head=new THREE.Mesh(new THREE.SphereGeometry(0.38,20,20), matSkin);
+ head.position.y=2.2; head.name='head'; group.add(head);
+ const eyeL=new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), new THREE.MeshStandardMaterial({color:0x000000}));
+ eyeL.position.set(-0.12,2.25,0.32); group.add(eyeL);
+ const eyeR=eyeL.clone(); eyeR.position.x=0.12; group.add(eyeR);
+
+ // braços
+ function makeArm(side){
+  const armG=new THREE.Group(); armG.name=side==='L'?'armL':'armR';
+  const upper=new THREE.Mesh(new THREE.CapsuleGeometry(0.13,0.45,4,10), matSkin);
+  upper.position.y=-0.22; upper.name='upper';
+  const lower=new THREE.Mesh(new THREE.CapsuleGeometry(0.11,0.4,4,10), matSkin);
+  lower.position.y=-0.75; lower.name='lower';
+  const glove=new THREE.Mesh(new THREE.SphereGeometry(0.22,14,14), matGlove);
+  glove.position.y=-1.05; glove.name='glove';
+  armG.add(upper,lower,glove);
+  armG.position.set(side==='L'?-0.62:0.62,1.75,0);
+  return armG;
+ }
+ group.add(makeArm('L'), makeArm('R'));
+
+ // pernas
+ function makeLeg(side){
+  const legG=new THREE.Group(); legG.name=side==='L'?'legL':'legR';
+  const upper=new THREE.Mesh(new THREE.CapsuleGeometry(0.16,0.55,4,10), matSkin);
+  upper.position.y=-0.28;
+  const lower=new THREE.Mesh(new THREE.CapsuleGeometry(0.14,0.5,4,10), matSkin);
+  lower.position.y=-0.9;
+  const foot=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.14,0.45), new THREE.MeshStandardMaterial({color:char.col}));
+  foot.position.set(0,-1.22,0.08);
+  legG.add(upper,lower,foot);
+  legG.position.set(side==='L'?-0.22:0.22,0.35,0);
+  return legG;
+ }
+ group.add(makeLeg('L'), makeLeg('R'));
+
+ // arma aquiles bonita
+ if(char.id==='aquiles'){
+  const wood=new THREE.Group(); wood.name='weapon';
+  const stick=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.06,2,10), new THREE.MeshStandardMaterial({color:0x5a2e0e, roughness:0.7}));
+  stick.position.y=1; wood.add(stick);
+  const tip=new THREE.Mesh(new THREE.SphereGeometry(0.09,8,8), new THREE.MeshStandardMaterial({color:0x2a1a0a}));
+  tip.position.y=2.05; wood.add(tip);
+  wood.position.set(0.85,1.2,0.25); wood.rotation.z=Math.PI/7; group.add(wood);
+ }
+
+ group.position.set(x,0,0);
+ return group;
+}
+
+window.start=()=>{
+ document.getElementById('sel').style.display='none';
+ const wrap=document.getElementById('wrap');
+ scene=new THREE.Scene();
+ scene.fog=new THREE.Fog(0x0a0a14, 8, 18);
+ camera=new THREE.PerspectiveCamera(50,1120/640,0.1,100);
+ camera.position.set(0,2.2,6.2);
+
+ renderer=new THREE.WebGLRenderer({antialias:true, alpha:true});
+ renderer.setSize(1120,640); renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+ renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.1;
+ wrap.prepend(renderer.domElement);
+
+ // LUZES BONITAS
+ const amb=new THREE.AmbientLight(0x6a7bff,0.55); scene.add(amb);
+ const key=new THREE.DirectionalLight(0xffffff,1.4); key.position.set(4,6,3); key.castShadow=true; key.shadow.mapSize.set(2048,2048); key.shadow.bias=-0.0002; scene.add(key);
+ const rim=new THREE.DirectionalLight(0x00ff88,0.6); rim.position.set(-4,3,-3); scene.add(rim);
+ const fill=new THREE.PointLight(0xff2a6d,0.8,10); fill.position.set(0,2,-2); scene.add(fill);
+
+ // ARENA
+ const floor=new THREE.Mesh(new THREE.CylinderGeometry(6,6,0.5,32), new THREE.MeshStandardMaterial({color:0x15151f, roughness:0.8}));
+ floor.position.y=-0.25; floor.receiveShadow=true; scene.add(floor);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(6.05,0.08,12,64), new THREE.MeshStandardMaterial({color:0x222233, emissive:0x00ff88, emissiveIntensity:0.15}));
+ ring.rotation.x=Math.PI/2; ring.position.y=0.02; scene.add(ring);
+ const gridHelper=new THREE.GridHelper(14,14,0x222244,0x111122); gridHelper.position.y=0.01; scene.add(gridHelper);
+
+ // crowd fake com pontos
+ const crowdGeo=new THREE.BufferGeometry(); const pos=[]; for(let i=0;i<600;i++){const ang=Math.random()*Math.PI*2; const r=7+Math.random()*3; pos.push(Math.cos(ang)*r,2+Math.random()*2,Math.sin(ang)*r);} crowdGeo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+ const crowd=new THREE.Points(crowdGeo,new THREE.PointsMaterial({size:0.08,color:0x334466})); scene.add(crowd);
+
+ p1=createFighter(CHARS[s1],-2); p2=createFighter(CHARS[s2],2);
+ scene.add(p1,p2);
+ p1.traverse(o=>{if(o.isMesh){o.castShadow=true; o.receiveShadow=true}});
+ p2.traverse(o=>{if(o.isMesh){o.castShadow=true; o.receiveShadow=true}});
+
+ document.getElementById('n1').textContent=CHARS[s1].full; document.getElementById('n2').textContent=CHARS[s2].full;
+ run=true; time=60; clock=new THREE.Clock();
+ loop();
+ setInterval(()=>{if(run){time--; document.getElementById('timer').textContent=time; if(time<=0) finish(null);}},1000);
+};
+
+function animFighter(f, dt){
+ if(f.animTime<=0) return;
+ f.animTime-=dt*2.2;
+ const p=1-f.animTime;
+ const armR=f.getObjectByName('armR'), armL=f.getObjectByName('armL'), legR=f.getObjectByName('legR'), legL=f.getObjectByName('legL'), weapon=f.getObjectByName('weapon'), torso=f.getObjectByName('torso');
+
+ if(f.state==='punch'){
+  const jab= Math.sin(p*Math.PI);
+  if(f.char.id==='bunitin'){ armR.position.z=jab*0.9; armR.position.x=0.62+jab*0.35*f.face; armR.rotation.x=-jab*0.6; }
+  else if(f.char.id==='ferreira'){ armR.position.y=1.75+jab*0.9; armR.rotation.x=-jab*1.8; armR.rotation.z=jab*0.5; torso.rotation.x=-jab*0.25; }
+  else { armR.position.z=jab*0.85; armR.rotation.x=-jab*0.4; }
+ }
+ if(f.state==='kick'){
+  if(f.char.id==='bunitin' || f.char.id==='murilo'){
+   f.rotation.y=p*Math.PI*1.5*f.face; legR.rotation.x=p*Math.PI*1.4; legR.position.y=0.35+Math.sin(p*Math.PI)*0.7; torso.rotation.z=p*0.5;
+  }else{ legR.rotation.x=-p*1.1; legR.position.y=0.35+Math.sin(p*Math.PI)*0.9; legR.position.z=Math.sin(p*Math.PI)*0.6; }
+ }
+ if(f.state==='special'){
+  if(f.char.id==='aquiles' && weapon){ weapon.rotation.z=Math.PI/7 - p*Math.PI*1.35; weapon.rotation.x=p*Math.PI*0.8; f.rotation.y=p*0.35*f.face; }
+  else if(f.char.id==='bunitin'){ f.rotation.y=p*Math.PI*3; legR.rotation.x=p*Math.PI*2.2; legL.rotation.x=-p*0.6; }
+  else if(f.char.id==='murilo'){ f.rotation.y=p*Math.PI*2.2; torso.rotation.x=p*0.6; legR.rotation.x=p*Math.PI*1.8; }
+  else if(f.char.id==='gustavo'){ armR.rotation.z=-p*Math.PI*1.1; armL.rotation.z=p*0.8; torso.rotation.x=p*0.35; legR.rotation.x=-p*0.8; }
+  else { armR.rotation.z=-p*Math.PI*0.9; f.rotation.y=p*0.5*f.face; }
+ }
+ if(f.animTime<=0){ f.state='idle'; f.canHit=false; f.rotation.set(0,0,0); torso.rotation.set(0,0,0); armR.position.set(0.62,1.75,0); armR.rotation.set(0,0,0); armL.position.set(-0.62,1.75,0); armL.rotation.set(0,0,0); legR.position.set(0.22,0.35,0); legR.rotation.set(0,0,0); legL.position.set(-0.22,0.35,0); legL.rotation.set(0,0,0); if(weapon){weapon.position.set(0.85,1.2,0.25); weapon.rotation.set(0,0,Math.PI/7);} }
+}
+
+function attack(f,type){
+ if(f.cd>0||f.state!=='idle') return;
+ f.state=type; f.animTime=1; f.canHit=true;
+ const isCasal=(f.char.id==='bosco'||f.char.id==='evellyn');
+ let dmg=type==='special'?f.char.dmg:(type==='punch'?13:17);
+ if(isCasal && ( (p1.char.id==='bosco'&&p2.char.id==='evellyn')||(p1.char.id==='evellyn'&&p2.char.id==='bosco') )) dmg=Math.floor(dmg*1.15);
+ f.dmgNow=dmg;
+ f.cd=type==='special'?68:(type==='punch'?22:28);
+}
+
+function hitFx(x,y,txt,col){
+ const fx=document.getElementById('fx');
+ const el=document.createElement('div'); el.className='hitText'; el.style.left=x+'px'; el.style.top=y+'px'; el.textContent=txt; el.style.color=col;
+ fx.appendChild(el); setTimeout(()=>el.remove(),600);
+ // camera shake
+ const wrap=document.getElementById('wrap'); wrap.style.transform='translate('+ (Math.random()*6-3)+'px,'+(Math.random()*4-2)+'px)'; setTimeout(()=>wrap.style.transform='',80);
+}
+
+function loop(){
+ if(!run) return;
+ raf=requestAnimationFrame(loop);
+ const dt=clock.getDelta();
+ // input
+ if(keys['KeyA']) p1.position.x-=3.2*dt; if(keys['KeyD']) p1.position.x+=3.2*dt;
+ if(keys['KeyW']&&p1.position.y===0){p1.position.y=0.02; p1.vy=4.5;}
+ if(keys['KeyJ']) attack(p1,'punch'); if(keys['KeyK']) attack(p1,'kick'); if(keys['KeyL']&&keys['KeyJ']&&keys['KeyK']&&p1.sp>=100) {attack(p1,'special'); p1.sp=0;}
+ if(keys['KeyS']){p1.guard=Math.max(0,p1.guard-60*dt);} else if(p1.guard<100) p1.guard=Math.min(100,p1.guard+30*dt);
+
+ if(keys['Numpad4']) p2.position.x-=3.2*dt; if(keys['Numpad6']) p2.position.x+=3.2*dt;
+ if(keys['Numpad8']&&p2.position.y===0){p2.position.y=0.02; p2.vy=4.5;}
+ if(keys['Numpad1']) attack(p2,'punch'); if(keys['Numpad2']) attack(p2,'kick'); if(keys['Numpad3']&&keys['Numpad1']&&keys['Numpad2']&&p2.sp>=100){attack(p2,'special'); p2.sp=0;}
+ if(keys['Numpad5']){p2.guard=Math.max(0,p2.guard-60*dt);} else if(p2.guard<100) p2.guard=Math.min(100,p2.guard+30*dt);
+
+ // physics
+ for(const f of [p1,p2]){
+  if(f.position.y>0){f.vy-=9.8*dt; f.position.y+=f.vy*dt; if(f.position.y<=0){f.position.y=0; f.vy=0;}}
+  if(f.cd>0) f.cd-=60*dt;
+  if(f.state==='idle' && f.sp<100) f.sp+=18*dt;
+  animFighter(f,dt);
+ }
+ // colisão - não atravessar
+ if(Math.abs(p1.position.x-p2.position.x)<0.95){ const mid=(p1.position.x+p2.position.x)/2; if(p1.position.x<p2.position.x){p1.position.x=mid-0.48; p2.position.x=mid+0.48;} else{p1.position.x=mid+0.48; p2.position.x=mid-0.48;} }
+ p1.position.x=Math.max(-4.2,Math.min(4.2,p1.position.x)); p2.position.x=Math.max(-4.2,Math.min(4.2,p2.position.x));
+ p1.face=p1.position.x<p2.position.x?1:-1; p2.face=p2.position.x<p1.position.x?1:-1; p1.rotation.y=p1.face===1?0:Math.PI; p2.rotation.y=p2.face===-1?0:Math.PI;
+
+ // hit check
+ const dist=Math.abs(p1.position.x-p2.position.x);
+ for(const [a,b] of [[p1,p2],[p2,p1]]){
+  if(a.canHit && dist < a.char.range*0.55+1){
+   if(b.guard>10 && ((a==p1&&keys['KeyS'])||(a==p2&&keys['Numpad5']))){
+    b.hp=Math.max(0,b.hp-a.dmgNow*0.18); hitFx( (a==p1?700:300), 280, 'BLOCK', '#88ddff');
+   }else{
+    b.hp=Math.max(0,b.hp-a.dmgNow); b.took=true; b.position.y=0.15; b.vy=2.2; b.position.x+=a.face*0.35;
+    hitFx( (a==p1?740:260), 260+Math.random()*60, `-${a.dmgNow} ${a.char.id==='bunitin'?'🇰🇷':a.char.id==='aquiles'?'🪵':'💥'}`, '#'+a.char.col.toString(16).padStart(6,'0'));
+   }
+   a.canHit=false;
+   if(b.hp<=0) finish(a===p1?'p1':'p2');
+  }
+ }
+
+ // hud
+ document.getElementById('hp1').style.width=(p1.hp/2)+'%'; document.getElementById('hp2').style.width=(p2.hp/2)+'%';
+ document.getElementById('d1').textContent=Math.floor(p1.hp)+' -'; document.getElementById('d2').textContent='- '+Math.floor(p2.hp);
+ document.getElementById('g1').style.width=p1.guard+'%'; document.getElementById('g2').style.width=p2.guard+'%';
+ document.getElementById('s1').style.width=p1.sp+'%'; document.getElementById('s2').style.width=p2.sp+'%';
+
+ // camera suave
+ const mid=(p1.position.x+p2.position.x)/2;
+ camera.position.x+=(mid*0.35 - camera.position.x)*0.08;
+ camera.position.y=2.2 + Math.abs(p1.position.x-p2.position.x)*0.08;
+ camera.lookAt(mid,1.1,0);
+
+ renderer.render(scene,camera);
+}
+
+function finish(w){
+ run=false; cancelAnimationFrame(raf);
+ const win=w==='p1'?p1:w==='p2'?p2:null;
+ const perfect=win && win.hp===200 && !win.took;
+ alert((win?win.char.full:'EMPATE')+(perfect?' - PERFECT! 200HP':' - K.O.!')+ ( (p1.char.id==='bosco'&&p2.char.id==='evellyn')||(p1.char.id==='evellyn'&&p2.char.id==='bosco') ? ' 💕 CASAL BUFF!' : '' ));
+ location.reload();
+}
+
+addEventListener('keydown',e=>{keys[e.code]=true; if(e.code==='Enter'&&document.getElementById('sel').style.display!=='none') start();});
+addEventListener('keyup',e=>keys[e.code]=false);
+</script>
+</body>
+</html>
